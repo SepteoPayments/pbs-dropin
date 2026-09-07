@@ -1,0 +1,70 @@
+{
+	"name": "pbs-dropin",
+	"version": "0.1.0",
+	"type": "module",
+	"description": "Septeo Payments public API drop-in (session form + Adyen widget)",
+	"license": "MIT",
+	"author": "Septeo Payments",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/SepteoPayments/pbs-dropin.git"
+	},
+	"bugs": {
+		"url": "https://github.com/SepteoPayments/pbs-dropin/issues"
+	},
+	"homepage": "https://github.com/SepteoPayments/pbs-dropin#readme",
+	"main": "./dist/index.js",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js",
+			"default": "./dist/index.js"
+		},
+		"./styles": "./dist/pbs-dropin.css"
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"sideEffects": [
+		"**/*.css"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build && tsc -p tsconfig.build.json && mkdir -p dist/styles && cp src/styles/pbs-dropin.css dist/styles/pbs-dropin.css",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"type-check": "tsc --noEmit -p tsconfig.json",
+		"prepublishOnly": "npm run type-check && npm test && npm run build"
+	},
+	"peerDependencies": {
+		"@adyen/adyen-web": "^6.0.0",
+		"react": ">=18",
+		"react-dom": ">=18"
+	},
+	"devDependencies": {
+		"@adyen/adyen-web": "^6.42.0",
+		"@testing-library/jest-dom": "^6.9.1",
+		"@testing-library/react": "^16.3.0",
+		"@testing-library/user-event": "^14.6.4",
+		"@types/react": "^19.2.18",
+		"@types/react-dom": "^19.2.4",
+		"@vitejs/plugin-react": "^6.0.5",
+		"jsdom": "^29.1.1",
+		"react": "19.2.8",
+		"react-dom": "19.2.8",
+		"typescript": "5.9.3",
+		"vite": "^8.2.1",
+		"vitest": "^4.1.10"
+	},
+	"dependencies": {
+		"@sankyu/react-circle-flags": "^1.6.7",
+		"react-country-flag": "^3.1.0"
+	}
+}

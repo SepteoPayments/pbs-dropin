@@ -1,0 +1,13 @@
+node_modules
+src
+tests
+dev
+coverage
+index.html
+vite.config.ts
+vitest.config.ts
+vitest.setup.ts
+vitest-env.d.ts
+tsconfig.json
+tsconfig.build.json
+.github
