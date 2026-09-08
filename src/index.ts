@@ -10,6 +10,8 @@ export type {
 	PaymentProvider,
 	CaptureMode,
 	RecurringModel,
+	ConsentMode,
 	CreateSessionRequest,
 	CreateSessionResponse,
+	CreateSessionLineItem,
 } from './types'

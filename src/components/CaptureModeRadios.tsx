@@ -6,6 +6,7 @@ interface CaptureModeRadiosProps {
 	immediateLabel: string
 	delayedLabel: string
 	manualLabel: string
+	hint?: string
 	disabled?: boolean
 	onChange: (mode: CaptureMode) => void
 }
@@ -22,6 +23,7 @@ export function CaptureModeRadios({
 	immediateLabel,
 	delayedLabel,
 	manualLabel,
+	hint,
 	disabled,
 	onChange,
 }: CaptureModeRadiosProps) {
@@ -61,6 +63,7 @@ export function CaptureModeRadios({
 					</label>
 				))}
 			</div>
+			{hint && <p className='pbs-dropin__hint'>{hint}</p>}
 		</div>
 	)
 }

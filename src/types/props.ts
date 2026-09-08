@@ -1,5 +1,5 @@
-import type { CreateSessionResponse } from './session'
-import type { AdyenEnvironment } from './enums'
+import type { CreateSessionLineItem, CreateSessionResponse } from './session'
+import type { AdyenEnvironment, ConsentMode } from './enums'
 
 export interface PbsDropinCallbacks {
 	onSessionCreated?: (session: CreateSessionResponse) => void
@@ -8,15 +8,17 @@ export interface PbsDropinCallbacks {
 }
 
 export interface PbsDropinProps extends PbsDropinCallbacks {
-	/** If provided, the access-token field is hidden and this value is used. */
-	accessToken?: string
+	/** Bearer used to create the public session. The drop-in never shows this field. */
+	accessToken: string
+	/** Public store id sent in the session body. The drop-in never shows this field. */
+	publicStoreId: string
+	/** Return URL sent in the session body. The drop-in never shows this field. */
+	returnUrl: string
 	/** If provided, the API base URL field is hidden and this value is used. */
 	apiBaseUrl?: string
 	/** If provided, the Adyen client-key field is hidden and this value is used. */
 	adyenClientKey?: string
 	adyenEnvironment?: AdyenEnvironment
-	/** If provided, the store-id field is hidden and this value is used. */
-	publicStoreId?: string
 	/**
 	 * Languages offered in the compact selector (BCP 47, e.g. fr-FR).
 	 * One language hides the selector and freezes the drop-in.
@@ -36,4 +38,15 @@ export interface PbsDropinProps extends PbsDropinCallbacks {
 			[translationKey: string]: string
 		}
 	}
+	/**
+	 * Basket lines sent on session create. Adyen only returns Klarna / BNPL when
+	 * `lineItems` and `shopperCountryCode` are present. A PMS should pass the real
+	 * basket; the test form can also send a single synthetic line via the checkbox.
+	 */
+	lineItems?: CreateSessionLineItem[]
+	/**
+	 * Tokenization consent sent on session create (`ASK_FOR_CONSENT` | `FORCED`).
+	 * When omitted, the test form chooses; `ASK_FOR_CONSENT` shows a checkbox in the Drop-in.
+	 */
+	consentMode?: ConsentMode
 }

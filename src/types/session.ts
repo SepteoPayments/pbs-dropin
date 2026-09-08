@@ -1,4 +1,4 @@
-import type { CaptureMode, RecurringModel } from './enums'
+import type { CaptureMode, ConsentMode, RecurringModel } from './enums'
 
 export interface CreateSessionAmount {
 	value: number
@@ -13,6 +13,14 @@ export interface CreateSessionCapture {
 export interface CreateSessionTokenization {
 	shopperReference: string
 	recurringModel: RecurringModel
+	consentMode?: ConsentMode
+}
+
+export interface CreateSessionLineItem {
+	id?: string
+	description: string
+	quantity: number
+	amountIncludingTax: number
 }
 
 export interface CreateSessionRequest {
@@ -25,6 +33,7 @@ export interface CreateSessionRequest {
 	tokenization: CreateSessionTokenization | null
 	moto: boolean
 	preAuth: boolean
+	lineItems?: CreateSessionLineItem[]
 }
 
 export interface ClientSession {

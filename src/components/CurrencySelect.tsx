@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { getCountryCodeForCurrency, getCurrencyLabel } from '../constants/currencies'
 import { CountryFlag } from './CountryFlag'
+import { FieldLabel } from './FieldLabel'
 
 interface CurrencySelectProps {
 	value: string
@@ -8,6 +9,8 @@ interface CurrencySelectProps {
 	locale: string
 	label: string
 	disabled?: boolean
+	required?: boolean
+	error?: string
 	onChange: (currency: string) => void
 }
 
@@ -17,6 +20,8 @@ export function CurrencySelect({
 	locale,
 	label,
 	disabled,
+	required,
+	error,
 	onChange,
 }: CurrencySelectProps) {
 	const [isOpen, setIsOpen] = useState(false)
@@ -41,9 +46,9 @@ export function CurrencySelect({
 
 	return (
 		<div className='pbs-dropin__field'>
-			<span className='pbs-dropin__label' id='pbs-currency-label'>
+			<FieldLabel id='pbs-currency-label' required={required}>
 				{label}
-			</span>
+			</FieldLabel>
 			<div className='pbs-dropin__currency-select' ref={rootRef}>
 				<button
 					type='button'
@@ -52,6 +57,7 @@ export function CurrencySelect({
 					aria-labelledby='pbs-currency-label'
 					aria-haspopup='listbox'
 					aria-expanded={isOpen}
+					aria-required={required}
 					disabled={disabled}
 					onClick={() => {
 						if (!disabled) {
@@ -94,6 +100,7 @@ export function CurrencySelect({
 					</div>
 				)}
 			</div>
+			{error && <span className='pbs-dropin__error'>{error}</span>}
 		</div>
 	)
 }

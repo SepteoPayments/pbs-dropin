@@ -1,7 +1,15 @@
-import type { CreateSessionRequest, SessionFormValues } from '../types'
+import type { CreateSessionLineItem, CreateSessionRequest, SessionFormValues } from '../types'
 import { majorAmountToCents } from '../utils/amount'
+import { resolveSessionLineItems } from '../utils/lineItems'
 
-export function formToSessionRequest(form: SessionFormValues): CreateSessionRequest {
+export interface FormToSessionRequestOptions {
+	lineItems?: CreateSessionLineItem[]
+}
+
+export function formToSessionRequest(
+	form: SessionFormValues,
+	options?: FormToSessionRequestOptions
+): CreateSessionRequest {
 	const amountValue = majorAmountToCents(form.amount)
 	if (amountValue === null) {
 		throw new Error('Invalid amount')
@@ -16,6 +24,7 @@ export function formToSessionRequest(form: SessionFormValues): CreateSessionRequ
 		? {
 				shopperReference: form.shopperReference.trim(),
 				recurringModel: form.recurringModel,
+				consentMode: form.consentMode,
 			}
 		: null
 
@@ -30,12 +39,17 @@ export function formToSessionRequest(form: SessionFormValues): CreateSessionRequ
 		capture,
 		tokenization,
 		moto: form.moto,
-		preAuth: form.preAuth,
+		preAuth: form.preAuth && form.captureMode === 'MANUAL',
 	}
 
 	const country = form.shopperCountryCode.trim().toUpperCase()
 	if (country.length > 0) {
 		request.shopperCountryCode = country
+	}
+
+	const lineItems = resolveSessionLineItems(form, options?.lineItems)
+	if (lineItems) {
+		request.lineItems = lineItems
 	}
 
 	return request

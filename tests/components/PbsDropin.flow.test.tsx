@@ -1,8 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AdyenCheckout } from '@adyen/adyen-web'
+import { AdyenCheckout } from '@adyen/adyen-web/auto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PbsDropin } from '../../src/components/PbsDropin'
+import { dropinTestProps } from '../helpers/dropinProps'
 
 const createSessionMock = vi.fn()
 
@@ -10,7 +11,7 @@ vi.mock('../../src/api/createSession', () => ({
 	createSession: (...args: unknown[]) => createSessionMock(...args),
 }))
 
-vi.mock('@adyen/adyen-web', () => {
+vi.mock('@adyen/adyen-web/auto', () => {
 	class DropinMock {
 		mount = vi.fn().mockReturnThis()
 		unmount = vi.fn()
@@ -18,15 +19,16 @@ vi.mock('@adyen/adyen-web', () => {
 	return {
 		AdyenCheckout: vi.fn().mockResolvedValue({}),
 		Dropin: DropinMock,
-		Card: {},
-		PayPal: {},
-		PayByBank: {},
-		Bancontact: {},
-		Klarna: {},
 	}
 })
 
 vi.mock('@adyen/adyen-web/styles/adyen.css', () => ({}))
+
+async function selectFrance(user: ReturnType<typeof userEvent.setup>) {
+	await user.click(screen.getByTestId('pbs-country'))
+	await user.type(screen.getByTestId('pbs-country'), 'fr')
+	await user.click(screen.getByRole('option', { name: /france/i }))
+}
 
 describe('PbsDropin session flow', () => {
 	beforeEach(() => {
@@ -43,9 +45,9 @@ describe('PbsDropin session flow', () => {
 
 	it('creates a session then mounts the Adyen container', async () => {
 		const user = userEvent.setup()
-		render(<PbsDropin accessToken='token' adyenClientKey='test_key' />)
+		render(<PbsDropin {...dropinTestProps()} />)
 
-		await user.type(screen.getByLabelText(/identifiant de boutique/i), 'store-uuid')
+		await selectFrance(user)
 		await user.click(screen.getByTestId('pbs-submit-session'))
 
 		await waitFor(() => {
@@ -61,5 +63,32 @@ describe('PbsDropin session flow', () => {
 		await user.click(screen.getByTestId('pbs-reset-session'))
 		expect(screen.queryByTestId('pbs-adyen-dropin')).not.toBeInTheDocument()
 		expect(screen.getByTestId('pbs-submit-session')).toBeEnabled()
+	})
+
+	it('sends lineItems when Klarna / BNPL is checked and a country is selected', async () => {
+		const user = userEvent.setup()
+		render(<PbsDropin {...dropinTestProps()} />)
+
+		await user.click(screen.getByRole('checkbox', { name: /klarna \/ bnpl/i }))
+		await selectFrance(user)
+		await user.click(screen.getByTestId('pbs-submit-session'))
+
+		await waitFor(() => {
+			expect(createSessionMock).toHaveBeenCalledWith(
+				expect.objectContaining({
+					body: expect.objectContaining({
+						shopperCountryCode: 'FR',
+						lineItems: [
+							{
+								id: 'SKU-1',
+								description: 'Article de test (requis pour afficher Klarna/BNPL)',
+								quantity: 1,
+								amountIncludingTax: 1000,
+							},
+						],
+					}),
+				})
+			)
+		})
 	})
 })

@@ -1,14 +1,24 @@
 import { getPbsMessages } from '../i18n/messages'
-import type { SessionFormValues } from '../types'
+import type { CreateSessionLineItem, SessionFormValues } from '../types'
 import { majorAmountToCents } from '../utils/amount'
 import { resolveHybridValue } from '../utils/hybridValue'
 
+const RECURRING_MODELS: ReadonlySet<string> = new Set([
+	'SUBSCRIPTION',
+	'CARD_ON_FILE',
+	'UNSCHEDULED',
+])
+
+const PROVIDERS: ReadonlySet<string> = new Set(['adyen', 'stripe'])
+
 export interface SessionFormValidationInput {
 	form: SessionFormValues
-	accessTokenProp?: string
+	accessToken: string
+	publicStoreId: string
+	returnUrl: string
 	apiBaseUrlProp?: string
-	publicStoreIdProp?: string
 	locale?: string
+	lineItemsFromProps?: CreateSessionLineItem[]
 }
 
 export type SessionFormErrors = Partial<Record<keyof SessionFormValues, string>>
@@ -18,8 +28,7 @@ export function validateSessionForm(input: SessionFormValidationInput): SessionF
 	const messages = getPbsMessages(input.locale ?? form.locale)
 	const errors: SessionFormErrors = {}
 
-	const accessToken = resolveHybridValue(form.accessToken, input.accessTokenProp)
-	if (accessToken.length === 0) {
+	if (input.accessToken.trim().length === 0) {
 		errors.accessToken = messages.accessTokenRequired
 	}
 
@@ -28,12 +37,17 @@ export function validateSessionForm(input: SessionFormValidationInput): SessionF
 		errors.apiBaseUrl = messages.apiBaseUrlRequired
 	}
 
-	const publicStoreId = resolveHybridValue(form.publicStoreId, input.publicStoreIdProp)
-	if (publicStoreId.length === 0) {
+	if (input.publicStoreId.trim().length === 0) {
 		errors.publicStoreId = messages.publicStoreIdRequired
 	}
 
-	if (majorAmountToCents(form.amount) === null) {
+	if (!PROVIDERS.has(form.provider)) {
+		errors.provider = messages.providerRequired
+	}
+
+	if (form.amount.trim().length === 0) {
+		errors.amount = messages.amountRequired
+	} else if (majorAmountToCents(form.amount) === null) {
 		errors.amount = messages.amountInvalid
 	}
 
@@ -45,8 +59,12 @@ export function validateSessionForm(input: SessionFormValidationInput): SessionF
 		errors.reference = messages.referenceRequired
 	}
 
-	if (form.returnUrl.trim().length === 0) {
+	if (input.returnUrl.trim().length === 0) {
 		errors.returnUrl = messages.returnUrlRequired
+	}
+
+	if (form.shopperCountryCode.trim().length === 0) {
+		errors.shopperCountryCode = messages.shopperCountryRequired
 	}
 
 	if (form.captureMode === 'DELAYED') {
@@ -59,6 +77,9 @@ export function validateSessionForm(input: SessionFormValidationInput): SessionF
 	if (form.tokenizationEnabled) {
 		if (form.shopperReference.trim().length === 0) {
 			errors.shopperReference = messages.shopperReferenceRequired
+		}
+		if (!RECURRING_MODELS.has(form.recurringModel)) {
+			errors.recurringModel = messages.recurringModelRequired
 		}
 	}
 

@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import { dropinTestProps } from '../helpers/dropinProps'
 import { formToSessionRequest } from '../../src/mappers/formToSessionRequest'
 import { createDefaultSessionForm } from '../../src/utils/defaultForm'
 import type { SessionFormValues } from '../../src/types'
 
 function form(overrides: Partial<SessionFormValues> = {}): SessionFormValues {
 	return {
-		...createDefaultSessionForm({}),
-		publicStoreId: 'store-1',
+		...createDefaultSessionForm(dropinTestProps()),
 		...overrides,
 	}
 }
@@ -41,7 +41,55 @@ describe('formToSessionRequest', () => {
 		expect(request.tokenization).toEqual({
 			shopperReference: 'shopper-42',
 			recurringModel: 'SUBSCRIPTION',
+			consentMode: 'ASK_FOR_CONSENT',
 		})
+		expect(request.moto).toBe(false)
+		expect(request.preAuth).toBe(false)
+	})
+
+	it('sends consentMode on tokenization', () => {
+		const request = formToSessionRequest(
+			form({
+				tokenizationEnabled: true,
+				shopperReference: 'shopper-42',
+				consentMode: 'FORCED',
+			})
+		)
+		expect(request.tokenization).toEqual({
+			shopperReference: 'shopper-42',
+			recurringModel: 'CARD_ON_FILE',
+			consentMode: 'FORCED',
+		})
+	})
+
+	it('sends tokenization null when the checkbox is off', () => {
+		const request = formToSessionRequest(
+			form({
+				tokenizationEnabled: false,
+				shopperReference: 'shopper-42',
+				recurringModel: 'SUBSCRIPTION',
+			})
+		)
+		expect(request.tokenization).toBeNull()
+	})
+
+	it('maps preAuth only with MANUAL capture', () => {
+		const ignored = formToSessionRequest(form({ preAuth: true, moto: false }))
+		expect(ignored.preAuth).toBe(false)
+		expect(ignored.capture).toEqual({ mode: 'IMMEDIATE' })
+
+		const preAuth = formToSessionRequest(
+			form({ preAuth: true, moto: false, captureMode: 'MANUAL' })
+		)
+		expect(preAuth.preAuth).toBe(true)
+		expect(preAuth.moto).toBe(false)
+		expect(preAuth.capture).toEqual({ mode: 'MANUAL' })
+		expect(preAuth.tokenization).toBeNull()
+
+		const moto = formToSessionRequest(form({ preAuth: false, moto: true }))
+		expect(moto.preAuth).toBe(false)
+		expect(moto.moto).toBe(true)
+		expect(moto.tokenization).toBeNull()
 	})
 
 	it('omits empty shopperCountryCode', () => {
@@ -53,5 +101,49 @@ describe('formToSessionRequest', () => {
 		const request = formToSessionRequest(form({ locale: 'en-US' }))
 		expect(request).not.toHaveProperty('locale')
 		expect(request).not.toHaveProperty('shopperLocale')
+	})
+
+	it('omits lineItems by default', () => {
+		const request = formToSessionRequest(form())
+		expect(request.lineItems).toBeUndefined()
+	})
+
+	it('adds a synthetic line item matching the amount when includeLineItems is on', () => {
+		const request = formToSessionRequest(
+			form({ includeLineItems: true, amount: '50', shopperCountryCode: 'FR' })
+		)
+		expect(request.lineItems).toEqual([
+			{
+				id: 'SKU-1',
+				description: 'Article de test (requis pour afficher Klarna/BNPL)',
+				quantity: 1,
+				amountIncludingTax: 5000,
+			},
+		])
+		expect(request.shopperCountryCode).toBe('FR')
+	})
+
+	it('uses lineItems from options over the form checkbox', () => {
+		const request = formToSessionRequest(
+			form({ includeLineItems: true, amount: '10' }),
+			{
+				lineItems: [
+					{
+						id: 'ROOM-1',
+						description: 'Massage 60 min',
+						quantity: 1,
+						amountIncludingTax: 10000,
+					},
+				],
+			}
+		)
+		expect(request.lineItems).toEqual([
+			{
+				id: 'ROOM-1',
+				description: 'Massage 60 min',
+				quantity: 1,
+				amountIncludingTax: 10000,
+			},
+		])
 	})
 })

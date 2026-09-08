@@ -2,6 +2,7 @@ import { usePbsDropinFlow } from '../hooks/usePbsDropinFlow'
 import { getPbsMessages } from '../i18n/messages'
 import type { PbsDropinProps } from '../types'
 import { isProvidedProp } from '../utils/hybridValue'
+import { hasProvidedLineItems } from '../utils/lineItems'
 import { AdyenDropinMount } from './AdyenDropinMount'
 import { SessionForm } from './SessionForm'
 import { StripeUnavailable } from './StripeUnavailable'
@@ -19,10 +20,10 @@ export function PbsDropin(props: PbsDropinProps) {
 				availableLocales={flow.availableLocales}
 				showLanguageSelector={flow.showLanguageSelector}
 				currencyOptions={flow.currencyOptions}
-				accessTokenPropProvided={isProvidedProp(props.accessToken)}
 				apiBaseUrlPropProvided={isProvidedProp(props.apiBaseUrl)}
 				adyenClientKeyPropProvided={isProvidedProp(props.adyenClientKey)}
-				publicStoreIdPropProvided={isProvidedProp(props.publicStoreId)}
+				showIncludeLineItems={!hasProvidedLineItems(props.lineItems)}
+				showConsentMode={props.consentMode === undefined}
 				disabled={flow.status === 'submitting' || flow.session !== null}
 				canSubmit={flow.canSubmit}
 				isSubmitting={flow.status === 'submitting'}

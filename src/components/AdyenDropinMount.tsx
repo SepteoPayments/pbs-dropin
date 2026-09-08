@@ -1,16 +1,11 @@
 import {
 	AdyenCheckout,
-	Bancontact,
-	Card,
 	Dropin,
-	Klarna,
-	PayByBank,
-	PayPal,
 	type CoreConfiguration,
 	type DropinConfiguration,
 	type PaymentCompletedData,
 	type PaymentFailedData,
-} from '@adyen/adyen-web'
+} from '@adyen/adyen-web/auto'
 import '@adyen/adyen-web/styles/adyen.css'
 import { useEffect, useRef, useState } from 'react'
 import type { PbsMessages } from '../i18n/messages'
@@ -96,7 +91,6 @@ export function AdyenDropinMount({
 				}
 
 				const dropinConfiguration: DropinConfiguration = {
-					paymentMethodComponents: [Card, PayPal, PayByBank, Bancontact, Klarna],
 					showPayButton: true,
 					disableFinalAnimation: false,
 					showStoredPaymentMethods: true,
@@ -105,6 +99,13 @@ export function AdyenDropinMount({
 						card: {
 							hasHolderName: true,
 							holderNameRequired: true,
+						},
+						googlepay: {
+							buttonType: 'pay',
+							configuration: {
+								gatewayMerchantId: 'Septeo',
+								merchantId: 'BCR2DN7TSDNPH7DO',
+							},
 						},
 					},
 				}

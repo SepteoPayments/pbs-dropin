@@ -1,4 +1,4 @@
-import type { CaptureMode, PaymentProvider, RecurringModel } from './enums'
+import type { CaptureMode, ConsentMode, PaymentProvider, RecurringModel } from './enums'
 
 export interface SessionFormValues {
 	accessToken: string
@@ -17,6 +17,8 @@ export interface SessionFormValues {
 	preAuth: boolean
 	moto: boolean
 	tokenizationEnabled: boolean
+	includeLineItems: boolean
 	shopperReference: string
 	recurringModel: RecurringModel
+	consentMode: ConsentMode
 }

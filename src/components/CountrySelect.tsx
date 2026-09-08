@@ -5,6 +5,7 @@ import {
 	getDisplayableCountries,
 } from '../constants/countries'
 import { CountryFlag } from './CountryFlag'
+import { FieldLabel } from './FieldLabel'
 
 interface CountrySelectProps {
 	value: string
@@ -12,6 +13,8 @@ interface CountrySelectProps {
 	label: string
 	placeholder: string
 	disabled?: boolean
+	required?: boolean
+	error?: string
 	onChange: (countryCode: string) => void
 }
 
@@ -21,6 +24,8 @@ export function CountrySelect({
 	label,
 	placeholder,
 	disabled,
+	required,
+	error,
 	onChange,
 }: CountrySelectProps) {
 	const countries = useMemo(() => getDisplayableCountries(locale), [locale])
@@ -50,9 +55,9 @@ export function CountrySelect({
 
 	return (
 		<div className='pbs-dropin__field pbs-dropin__field--full' ref={rootRef}>
-			<label className='pbs-dropin__label' htmlFor='pbs-country'>
+			<FieldLabel htmlFor='pbs-country' required={required}>
 				{label}
-			</label>
+			</FieldLabel>
 			<div className='pbs-dropin__country-select'>
 				{selected && !isOpen && (
 					<span className='pbs-dropin__country-flag'>
@@ -66,6 +71,7 @@ export function CountrySelect({
 					value={isOpen ? query : (selected?.label ?? value)}
 					placeholder={placeholder}
 					disabled={disabled}
+					aria-required={required}
 					autoComplete='off'
 					onFocus={() => {
 						if (disabled) {
@@ -110,6 +116,7 @@ export function CountrySelect({
 					</div>
 				)}
 			</div>
+			{error && <span className='pbs-dropin__error'>{error}</span>}
 		</div>
 	)
 }

@@ -1,16 +1,26 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createSession } from '../api/createSession'
 import { isPbsApiError } from '../api/errors'
 import { resolveCurrencyOptions } from '../constants/currencies'
 import { DEFAULT_ADYEN_ENVIRONMENT, DEFAULT_API_BASE_URL } from '../constants/defaults'
 import { resolveAvailableLocales } from '../constants/locales'
 import { formToSessionRequest } from '../mappers/formToSessionRequest'
-import type { AdyenEnvironment, CreateSessionResponse, PbsDropinProps, SessionFormValues } from '../types'
+import type {
+	AdyenEnvironment,
+	CreateSessionResponse,
+	PbsDropinProps,
+	SessionFormValues,
+} from '../types'
+import { applySessionFormChange } from '../utils/applySessionFormChange'
 import { createDefaultSessionForm } from '../utils/defaultForm'
 import { debugLog } from '../utils/debugLog'
 import { resolveHybridValue } from '../utils/hybridValue'
 import { getPbsMessages } from '../i18n/messages'
-import { hasSessionFormErrors, validateSessionForm, type SessionFormErrors } from '../validation/validateSessionForm'
+import {
+	hasSessionFormErrors,
+	validateSessionForm,
+	type SessionFormErrors,
+} from '../validation/validateSessionForm'
 
 export type DropinFlowStatus = 'idle' | 'submitting' | 'ready' | 'error'
 
@@ -42,22 +52,42 @@ export function usePbsDropinFlow(props: PbsDropinProps): UsePbsDropinFlowResult 
 	const [submitError, setSubmitError] = useState<string | null>(null)
 	const [session, setSession] = useState<CreateSessionResponse | null>(null)
 
-	const resolvedAccessToken = resolveHybridValue(form.accessToken, props.accessToken)
+	const resolvedAccessToken = props.accessToken.trim()
 	const resolvedApiBaseUrl =
 		resolveHybridValue(form.apiBaseUrl, props.apiBaseUrl) || DEFAULT_API_BASE_URL
 	const resolvedAdyenClientKey = resolveHybridValue(form.adyenClientKey, props.adyenClientKey)
-	const resolvedPublicStoreId = resolveHybridValue(form.publicStoreId, props.publicStoreId)
+	const resolvedPublicStoreId = props.publicStoreId.trim()
+	const resolvedReturnUrl = props.returnUrl.trim()
 	const adyenEnvironment = props.adyenEnvironment ?? DEFAULT_ADYEN_ENVIRONMENT
 	const availableLocales = resolveAvailableLocales(props.locales)
 	const showLanguageSelector = availableLocales.length > 1
 	const locale = form.locale
 	const currencyOptions = resolveCurrencyOptions(props.currencies)
 
-	const canSubmit = form.provider === 'adyen' && status !== 'submitting' && session === null
+	const canSubmit =
+		form.provider === 'adyen' &&
+		status !== 'submitting' &&
+		session === null &&
+		resolvedAccessToken.length > 0 &&
+		resolvedPublicStoreId.length > 0 &&
+		resolvedReturnUrl.length > 0
 
-	const updateField = useCallback(<K extends keyof SessionFormValues>(key: K, value: SessionFormValues[K]) => {
-		setForm(previous => ({ ...previous, [key]: value }))
-	}, [])
+	const updateField = useCallback(
+		<K extends keyof SessionFormValues>(key: K, value: SessionFormValues[K]) => {
+			setForm(previous => applySessionFormChange(previous, key, value))
+		},
+		[]
+	)
+
+	useEffect(() => {
+		setForm(previous => ({
+			...previous,
+			accessToken: props.accessToken,
+			publicStoreId: props.publicStoreId,
+			returnUrl: props.returnUrl,
+			...(props.consentMode !== undefined ? { consentMode: props.consentMode } : {}),
+		}))
+	}, [props.accessToken, props.publicStoreId, props.returnUrl, props.consentMode])
 
 	const resetSession = useCallback(() => {
 		setSession(null)
@@ -74,10 +104,12 @@ export function usePbsDropinFlow(props: PbsDropinProps): UsePbsDropinFlowResult 
 
 		const nextErrors = validateSessionForm({
 			form,
-			accessTokenProp: props.accessToken,
+			accessToken: props.accessToken,
+			publicStoreId: props.publicStoreId,
+			returnUrl: props.returnUrl,
 			apiBaseUrlProp: props.apiBaseUrl,
-			publicStoreIdProp: props.publicStoreId,
 			locale,
+			lineItemsFromProps: props.lineItems,
 		})
 		setErrors(nextErrors)
 		if (hasSessionFormErrors(nextErrors)) {
@@ -90,11 +122,18 @@ export function usePbsDropinFlow(props: PbsDropinProps): UsePbsDropinFlowResult 
 		setSubmitError(null)
 
 		try {
-			const body = formToSessionRequest({
-				...form,
-				publicStoreId: resolvedPublicStoreId,
+			const body = formToSessionRequest(
+				{
+					...form,
+					publicStoreId: resolvedPublicStoreId,
+					returnUrl: resolvedReturnUrl,
+				},
+				{ lineItems: props.lineItems }
+			)
+			debugLog('Creating public session', {
+				apiBaseUrl: resolvedApiBaseUrl,
+				reference: body.reference,
 			})
-			debugLog('Creating public session', { apiBaseUrl: resolvedApiBaseUrl, reference: body.reference })
 			const created = await createSession({
 				apiBaseUrl: resolvedApiBaseUrl,
 				accessToken: resolvedAccessToken,
@@ -114,7 +153,15 @@ export function usePbsDropinFlow(props: PbsDropinProps): UsePbsDropinFlowResult 
 			setStatus('error')
 			props.onError?.(error instanceof Error ? error : new Error(message))
 		}
-	}, [form, props, resolvedAccessToken, resolvedApiBaseUrl, resolvedPublicStoreId, locale])
+	}, [
+		form,
+		props,
+		resolvedAccessToken,
+		resolvedApiBaseUrl,
+		resolvedPublicStoreId,
+		resolvedReturnUrl,
+		locale,
+	])
 
 	return useMemo(
 		() => ({
