@@ -7,6 +7,7 @@ interface CaptureModeRadiosProps {
 	delayedLabel: string
 	manualLabel: string
 	hint?: string
+	helpLabel?: string
 	disabled?: boolean
 	onChange: (mode: CaptureMode) => void
 }
@@ -24,6 +25,7 @@ export function CaptureModeRadios({
 	delayedLabel,
 	manualLabel,
 	hint,
+	helpLabel,
 	disabled,
 	onChange,
 }: CaptureModeRadiosProps) {
@@ -35,9 +37,35 @@ export function CaptureModeRadios({
 
 	return (
 		<div className='pbs-dropin__field pbs-dropin__field--full'>
-			<span className='pbs-dropin__label' id='pbs-capture-mode-label'>
-				{label}
-			</span>
+			<div className='pbs-dropin__label-row'>
+				<span className='pbs-dropin__label' id='pbs-capture-mode-label'>
+					{label}
+				</span>
+				{hint && (
+					<button
+						type='button'
+						className='pbs-dropin__help'
+						aria-label={helpLabel ?? hint}
+						aria-describedby='pbs-capture-mode-help-text'
+						data-testid='pbs-capture-mode-help'
+					>
+						<svg
+							className='pbs-dropin__help-icon'
+							viewBox='0 0 24 24'
+							aria-hidden='true'
+							focusable='false'
+						>
+							<path
+								fill='currentColor'
+								d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z'
+							/>
+						</svg>
+						<span id='pbs-capture-mode-help-text' className='pbs-dropin__help-tooltip' role='tooltip'>
+							{hint}
+						</span>
+					</button>
+				)}
+			</div>
 			<div
 				className='pbs-dropin__radios'
 				role='radiogroup'
@@ -63,7 +91,6 @@ export function CaptureModeRadios({
 					</label>
 				))}
 			</div>
-			{hint && <p className='pbs-dropin__hint'>{hint}</p>}
 		</div>
 	)
 }

@@ -20,7 +20,6 @@ interface SessionFormProps {
   currencyOptions: string[];
   apiBaseUrlPropProvided: boolean;
   adyenClientKeyPropProvided: boolean;
-  showIncludeLineItems: boolean;
   showConsentMode: boolean;
   disabled: boolean;
   canSubmit: boolean;
@@ -47,7 +46,6 @@ export function SessionForm({
   currencyOptions,
   apiBaseUrlPropProvided,
   adyenClientKeyPropProvided,
-  showIncludeLineItems,
   showConsentMode,
   disabled,
   canSubmit,
@@ -71,7 +69,10 @@ export function SessionForm({
       }}
     >
       <div className="pbs-dropin__section-header">
-        <h2 className="pbs-dropin__title">{messages.sessionTitle}</h2>
+        <div>
+          <p className="pbs-dropin__eyebrow">{messages.sessionEyebrow}</p>
+          <h2 className="pbs-dropin__title">{messages.sessionTitle}</h2>
+        </div>
         {showLanguageSelector && (
           <LanguageSelector
             locale={form.locale}
@@ -91,33 +92,17 @@ export function SessionForm({
           delayedLabel={messages.captureDelayed}
           manualLabel={messages.captureManual}
           hint={messages.preAuthForcesManual}
+          helpLabel={messages.captureModeHelp}
           disabled={disabled}
           onChange={(mode) => onFieldChange("captureMode", mode)}
         />
 
-        {form.captureMode === "DELAYED" && (
-          <div
-            className="pbs-dropin__field pbs-dropin__field--full"
-            data-testid="pbs-delay-hours-field"
-          >
-            <FieldLabel htmlFor="pbs-delay-hours" required>
-              {messages.delayHours}
-            </FieldLabel>
-            <input
-              id="pbs-delay-hours"
-              className="pbs-dropin__input"
-              value={form.captureDelayHours}
-              onChange={handleText("captureDelayHours")}
-              inputMode="numeric"
-              disabled={disabled}
-              aria-required
-            />
-            <FieldError message={errors.captureDelayHours} />
-          </div>
-        )}
-
         <div
-          className="pbs-dropin__row"
+          className={
+            form.captureMode === "DELAYED"
+              ? "pbs-dropin__row pbs-dropin__row--three"
+              : "pbs-dropin__row"
+          }
           data-testid="pbs-provider-reference-row"
         >
           <ProviderSelect
@@ -143,18 +128,37 @@ export function SessionForm({
             />
             <FieldError message={errors.reference} />
           </div>
+
+          {form.captureMode === "DELAYED" && (
+            <div
+              className="pbs-dropin__field"
+              data-testid="pbs-delay-hours-field"
+            >
+              <FieldLabel htmlFor="pbs-delay-hours" required>
+                {messages.delayHours}
+              </FieldLabel>
+              <input
+                id="pbs-delay-hours"
+                className="pbs-dropin__input"
+                value={form.captureDelayHours}
+                onChange={handleText("captureDelayHours")}
+                inputMode="numeric"
+                disabled={disabled}
+                aria-required
+              />
+              <FieldError message={errors.captureDelayHours} />
+            </div>
+          )}
         </div>
 
         <SessionFlagsCheckboxes
           preAuth={form.preAuth}
           moto={form.moto}
           tokenizationEnabled={form.tokenizationEnabled}
-          includeLineItems={form.includeLineItems}
+          optionsLabel={messages.sessionOptions}
           preAuthLabel={messages.preAuth}
           motoLabel={messages.moto}
           tokenizationLabel={messages.tokenization}
-          klarnaBnplLabel={messages.klarnaBnpl}
-          showIncludeLineItems={showIncludeLineItems}
           disabled={disabled}
           onChange={(key, value) => onFieldChange(key, value)}
         />

@@ -11,3 +11,4 @@ export type {
 	AdyenSessionConfig,
 } from './session'
 export type { PbsDropinProps, PbsDropinCallbacks } from './props'
+export type { ThemeName } from '../themes/pbsThemes'

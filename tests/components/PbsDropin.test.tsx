@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { PbsDropin } from "../../src/components/PbsDropin";
@@ -122,6 +122,21 @@ describe("PbsDropin", () => {
     expect(screen.queryByLabelText(/délai en heures/i)).not.toBeInTheDocument();
     await user.click(screen.getByRole("radio", { name: /différé/i }));
     expect(screen.getByLabelText(/délai en heures/i)).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("pbs-provider-reference-row")).getByLabelText(
+        /délai en heures/i,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the pre-auth hint in a hover tooltip next to capture mode", () => {
+    render(<PbsDropin {...dropinTestProps()} />);
+    expect(document.querySelector(".pbs-dropin__hint")).toBeNull();
+    const help = screen.getByTestId("pbs-capture-mode-help");
+    expect(help).toHaveAccessibleName("Aide sur le mode de capture");
+    expect(help).toHaveAccessibleDescription(
+      /n’est documentée qu’avec la capture manuelle/i,
+    );
   });
 
   it("lets the user enable pre-auth, moto and tokenization independently", async () => {
@@ -135,8 +150,8 @@ describe("PbsDropin", () => {
       screen.getByRole("checkbox", { name: /tokenisation/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("checkbox", { name: /klarna \/ bnpl/i }),
-    ).toBeInTheDocument();
+      screen.queryByRole("checkbox", { name: /klarna \/ bnpl/i }),
+    ).not.toBeInTheDocument();
     await user.click(
       screen.getByRole("checkbox", { name: /pré-autorisation/i }),
     );
@@ -149,9 +164,6 @@ describe("PbsDropin", () => {
     expect(
       screen.getByRole("checkbox", { name: /tokenisation/i }),
     ).not.toBeChecked();
-    expect(
-      screen.getByRole("checkbox", { name: /klarna \/ bnpl/i }),
-    ).not.toBeChecked();
     await user.click(screen.getByRole("radio", { name: /immédiat/i }));
     expect(
       screen.getByRole("checkbox", { name: /pré-autorisation/i }),
@@ -159,20 +171,28 @@ describe("PbsDropin", () => {
     expect(screen.getByRole("radio", { name: /immédiat/i })).toBeChecked();
   });
 
-  it("lets the user enable Klarna / BNPL independently", async () => {
-    const user = userEvent.setup();
+  it("shows a visible checkbox next to each session flag label", () => {
     render(<PbsDropin {...dropinTestProps()} />);
-    await user.click(screen.getByRole("checkbox", { name: /klarna \/ bnpl/i }));
+    expect(screen.getByRole("group", { name: /options/i })).toBeInTheDocument();
+    const labels = [/pré-autorisation/i, /paiement moto/i, /tokenisation/i];
+    for (const name of labels) {
+      const checkbox = screen.getByRole("checkbox", { name });
+      expect(checkbox).toBeVisible();
+      expect(checkbox).toHaveAttribute("type", "checkbox");
+      expect(getComputedStyle(checkbox).opacity).not.toBe("0");
+    }
     expect(
-      screen.getByRole("checkbox", { name: /klarna \/ bnpl/i }),
-    ).toBeChecked();
-    expect(
-      screen.getByRole("checkbox", { name: /pré-autorisation/i }),
-    ).not.toBeChecked();
+      screen.queryByRole("checkbox", { name: /klarna \/ bnpl/i }),
+    ).not.toBeInTheDocument();
   });
 
-  it("hides the Klarna / BNPL checkbox when lineItems are passed as a prop", () => {
-    render(
+  it("never shows a Klarna / BNPL checkbox, with or without lineItems", () => {
+    const { rerender } = render(<PbsDropin {...dropinTestProps()} />);
+    expect(
+      screen.queryByRole("checkbox", { name: /klarna \/ bnpl/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("pbs-country")).toBeInTheDocument();
+    rerender(
       <PbsDropin
         {...dropinTestProps({
           lineItems: [
@@ -254,9 +274,7 @@ describe("PbsDropin", () => {
 
   it("hides consent radios when consentMode is passed as a prop", async () => {
     const user = userEvent.setup();
-    render(
-      <PbsDropin {...dropinTestProps({ consentMode: "FORCED" })} />,
-    );
+    render(<PbsDropin {...dropinTestProps({ consentMode: "FORCED" })} />);
     await user.click(screen.getByRole("checkbox", { name: /tokenisation/i }));
     expect(screen.getByLabelText(/référence acheteur/i)).toBeInTheDocument();
     expect(screen.queryByTestId("pbs-consent-mode")).not.toBeInTheDocument();
@@ -293,5 +311,79 @@ describe("PbsDropin", () => {
       /stripe n’est pas disponible/i,
     );
     expect(screen.getByTestId("pbs-submit-session")).toBeDisabled();
+  });
+
+  it("defaults to azur and hides the theme switcher", () => {
+    render(<PbsDropin {...dropinTestProps()} />);
+    expect(screen.getByTestId("pbs-dropin")).toHaveAttribute(
+      "data-theme",
+      "azur",
+    );
+    expect(screen.queryByTestId("pbs-themes")).not.toBeInTheDocument();
+  });
+
+  it("shows the four theme options when showThemeSwitcher is true", () => {
+    render(<PbsDropin {...dropinTestProps({ showThemeSwitcher: true })} />);
+    expect(screen.getByTestId("pbs-dropin")).toHaveAttribute(
+      "data-theme",
+      "azur",
+    );
+    expect(screen.getByTestId("pbs-themes")).toBeInTheDocument();
+    expect(screen.getByTestId("pbs-theme-azur")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByTestId("pbs-theme-blanc")).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(screen.getByTestId("pbs-theme-bleu")).toBeInTheDocument();
+    expect(screen.getByTestId("pbs-theme-ether")).toBeInTheDocument();
+  });
+
+  it("switches the data-theme when another theme is clicked", async () => {
+    const user = userEvent.setup();
+    render(<PbsDropin {...dropinTestProps({ showThemeSwitcher: true })} />);
+    await user.click(screen.getByTestId("pbs-theme-ether"));
+    expect(screen.getByTestId("pbs-dropin")).toHaveAttribute(
+      "data-theme",
+      "ether",
+    );
+    expect(screen.getByTestId("pbs-theme-ether")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByTestId("pbs-theme-blanc")).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+  });
+
+  it("hides the theme switcher when showThemeSwitcher is false", () => {
+    render(<PbsDropin {...dropinTestProps({ showThemeSwitcher: false })} />);
+    expect(screen.queryByTestId("pbs-themes")).not.toBeInTheDocument();
+    expect(screen.getByTestId("pbs-dropin")).toHaveAttribute(
+      "data-theme",
+      "azur",
+    );
+  });
+
+  it("starts on the requested defaultTheme", () => {
+    render(
+      <PbsDropin
+        {...dropinTestProps({
+          showThemeSwitcher: true,
+          defaultTheme: "blanc",
+        })}
+      />,
+    );
+    expect(screen.getByTestId("pbs-dropin")).toHaveAttribute(
+      "data-theme",
+      "blanc",
+    );
+    expect(screen.getByTestId("pbs-theme-blanc")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 });

@@ -14,4 +14,5 @@ export type {
 	CreateSessionRequest,
 	CreateSessionResponse,
 	CreateSessionLineItem,
+	ThemeName,
 } from './types'

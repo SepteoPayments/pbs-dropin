@@ -1,41 +1,17 @@
-import type { CreateSessionLineItem, SessionFormValues } from '../types'
-import { majorAmountToCents } from './amount'
+import type { CreateSessionLineItem } from "../types";
 
-export const DEFAULT_LINE_ITEM_ID = 'SKU-1'
-export const DEFAULT_LINE_ITEM_DESCRIPTION =
-	'Article de test (requis pour afficher Klarna/BNPL)'
-
-export function hasProvidedLineItems(lineItems: CreateSessionLineItem[] | undefined): boolean {
-	return Array.isArray(lineItems) && lineItems.length > 0
-}
-
-export function buildDefaultLineItems(amountIncludingTax: number): CreateSessionLineItem[] {
-	return [
-		{
-			id: DEFAULT_LINE_ITEM_ID,
-			description: DEFAULT_LINE_ITEM_DESCRIPTION,
-			quantity: 1,
-			amountIncludingTax,
-		},
-	]
+export function hasProvidedLineItems(
+  lineItems: CreateSessionLineItem[] | undefined,
+): boolean {
+  return Array.isArray(lineItems) && lineItems.length > 0;
 }
 
 export function resolveSessionLineItems(
-	form: SessionFormValues,
-	lineItemsFromProps?: CreateSessionLineItem[]
+  lineItemsFromProps?: CreateSessionLineItem[],
 ): CreateSessionLineItem[] | undefined {
-	if (hasProvidedLineItems(lineItemsFromProps)) {
-		return lineItemsFromProps
-	}
+  if (hasProvidedLineItems(lineItemsFromProps)) {
+    return lineItemsFromProps;
+  }
 
-	if (!form.includeLineItems) {
-		return undefined
-	}
-
-	const amountValue = majorAmountToCents(form.amount)
-	if (amountValue === null) {
-		return undefined
-	}
-
-	return buildDefaultLineItems(amountValue)
+  return undefined;
 }
